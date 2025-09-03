@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tag Scanner Email</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+  video { width: 100%; max-width: 400px; border: 1px solid #ccc; }
+  input, button { font-size: 1rem; margin: 5px; padding: 8px; }
+</style>
+</head>
+<body>
+
+<h1>Tag Scanner</h1>
+<p>Scan a tag number using your camera</p>
+
+<video id="video" autoplay></video>
+<br>
+<input type="text" id="tagInput" placeholder="Scanned tag number" readonly />
+<br>
+<button id="sendBtn">Send to Email</button>
+
+<form id="emailForm" action="https://formsubmit.co/YOUR_EMAIL_HERE" method="POST" style="display:none;">
+  <input type="text" name="tag" id="hiddenTag" />
+</form>
+
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script>
+  const codeReader = new ZXing.BrowserMultiFormatReader();
+  const videoElement = document.getElementById('video');
+  const tagInput = document.getElementById('tagInput');
+  const hiddenTag = document.getElementById('hiddenTag');
+  const emailForm = document.getElementById('emailForm');
+
+  // Start the camera
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+    .then(stream => {
+      videoElement.srcObject = stream;
+      videoElement.setAttribute("playsinline", true); // iOS fix
+    })
+    .catch(err => alert("Camera access denied: " + err));
+
+  // Scan loop
+  const scanLoop = async () => {
+    try {
+      const result = await codeReader.decodeOnceFromVideoElement(videoElement);
+      tagInput.value = result.text;
+      hiddenTag.value = result.text;
+      console.log("Tag scanned:", result.text);
+      // Optionally auto-submit after scanning
+      // emailForm.submit();
+    } catch (err) {
+      // No code detected; keep scanning
+      requestAnimationFrame(scanLoop);
+    }
+  };
+  scanLoop();
+
+  // Manual send button
+  document.getElementById('sendBtn').addEventListener('click', () => {
+    if(tagInput.value) {
+      hiddenTag.value = tagInput.value;
+      emailForm.submit();
+      alert("Tag sent!");
+      tagInput.value = "";
+    } else {
+      alert("No tag scanned!");
+    }
+  });
+</script>
+
+</body>
+</html>
