@@ -1,72 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tag Scanner</title>
-  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest"></script>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-    video { width: 100%; max-width: 400px; border: 1px solid #ccc; }
-    input, button { font-size: 1rem; margin: 5px; padding: 8px; }
-    .error { color: red; font-weight: bold; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camera Test</title>
 </head>
 <body>
-
-<h1>Tag Scanner</h1>
-<p>Point your camera at a tag to scan it.</p>
-
-<video id="video" autoplay playsinline></video>
-<br>
-<input type="text" id="tagInput" placeholder="Scanned tag" readonly />
-<br>
-<button id="sendBtn">Send Email</button>
-
-<p id="errorMessage" class="error" style="display:none;">Unable to access camera. Please check your permissions.</p>
-
-<form id="emailForm" action="https://formsubmit.co/YOUR_EMAIL_HERE" method="POST" style="display:none;">
-  <input type="text" name="tag" id="hiddenTag" />
-</form>
-
+<h1>Camera Test</h1>
+<video id="video" autoplay playsinline style="width:100%;max-width:400px;"></video>
 <script>
-  const videoElement = document.getElementById('video');
-  const tagInput = document.getElementById('tagInput');
-  const hiddenTag = document.getElementById('hiddenTag');
-  const emailForm = document.getElementById('emailForm');
-  const errorMessage = document.getElementById('errorMessage');
-
-  // Initialize ZXing barcode reader
-  const codeReader = new ZXing.BrowserBarcodeReader();
-
-  // Attempt to access the camera
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-    .then((stream) => {
-      videoElement.srcObject = stream;
-      codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
-        if (result) {
-          tagInput.value = result.text;
-          hiddenTag.value = result.text;
-        }
-      });
-    })
-    .catch((err) => {
-      console.error('Camera error:', err);
-      errorMessage.style.display = 'block';
-    });
-
-  // Handle form submission
-  document.getElementById('sendBtn').addEventListener('click', () => {
-    if (tagInput.value) {
-      hiddenTag.value = tagInput.value;
-      emailForm.submit();
-      alert('Tag sent!');
-      tagInput.value = '';
-    } else {
-      alert('No tag scanned!');
-    }
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+  .then(stream => {
+    document.getElementById('video').srcObject = stream;
+  })
+  .catch(err => {
+    document.body.innerHTML += "<p>Camera access failed: " + err + "</p>";
+    console.error(err);
   });
 </script>
-
 </body>
 </html>
