@@ -3,72 +3,68 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tag Scanner Email</title>
+<title>Tag OCR Scanner</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 <style>
   body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-  video { width: 100%; max-width: 400px; border: 1px solid #ccc; }
+  video, canvas { width: 100%; max-width: 400px; border: 1px solid #ccc; }
   input, button { font-size: 1rem; margin: 5px; padding: 8px; }
 </style>
 </head>
 <body>
 
-<h1>Tag Scanner</h1>
-<p>Scan a tag number using your camera</p>
+<h1>Tag OCR Scanner</h1>
+<p>Point your camera at a tag and click Scan</p>
 
-<video id="video" autoplay></video>
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas" style="display:none;"></canvas>
 <br>
-<input type="text" id="tagInput" placeholder="Scanned tag number" readonly />
+<input type="text" id="tagInput" placeholder="Scanned tag" readonly />
 <br>
-<button id="sendBtn">Send to Email</button>
+<button id="scanBtn">Scan</button>
+<button id="sendBtn">Send Email</button>
 
 <form id="emailForm" action="https://formsubmit.co/YOUR_EMAIL_HERE" method="POST" style="display:none;">
   <input type="text" name="tag" id="hiddenTag" />
 </form>
 
-<script src="https://unpkg.com/@zxing/library@latest"></script>
 <script>
-  const codeReader = new ZXing.BrowserMultiFormatReader();
-  const videoElement = document.getElementById('video');
-  const tagInput = document.getElementById('tagInput');
-  const hiddenTag = document.getElementById('hiddenTag');
-  const emailForm = document.getElementById('emailForm');
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const tagInput = document.getElementById('tagInput');
+const hiddenTag = document.getElementById('hiddenTag');
+const emailForm = document.getElementById('emailForm');
 
-  // Start the camera
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-    .then(stream => {
-      videoElement.srcObject = stream;
-      videoElement.setAttribute("playsinline", true); // iOS fix
-    })
-    .catch(err => alert("Camera access denied: " + err));
+// Access camera
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+.then(stream => { video.srcObject = stream; })
+.catch(err => alert("Camera access denied: " + err));
 
-  // Scan loop
-  const scanLoop = async () => {
-    try {
-      const result = await codeReader.decodeOnceFromVideoElement(videoElement);
-      tagInput.value = result.text;
-      hiddenTag.value = result.text;
-      console.log("Tag scanned:", result.text);
-      // Optionally auto-submit after scanning
-      // emailForm.submit();
-    } catch (err) {
-      // No code detected; keep scanning
-      requestAnimationFrame(scanLoop);
-    }
-  };
-  scanLoop();
+// Capture frame and run OCR
+document.getElementById('scanBtn').addEventListener('click', async () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // Manual send button
-  document.getElementById('sendBtn').addEventListener('click', () => {
-    if(tagInput.value) {
-      hiddenTag.value = tagInput.value;
-      emailForm.submit();
-      alert("Tag sent!");
-      tagInput.value = "";
+    tagInput.value = "Scanning...";
+    const { data: { text } } = await Tesseract.recognize(canvas, 'eng', { logger: m => console.log(m) });
+    const cleanedText = text.replace(/\s+/g, '').trim(); // remove spaces/newlines
+    tagInput.value = cleanedText;
+    hiddenTag.value = cleanedText;
+});
+
+// Send email via FormSubmit
+document.getElementById('sendBtn').addEventListener('click', () => {
+    if(tagInput.value){
+        hiddenTag.value = tagInput.value;
+        emailForm.submit();
+        alert("Tag sent: " + tagInput.value);
+        tagInput.value = "";
     } else {
-      alert("No tag scanned!");
+        alert("No tag scanned!");
     }
-  });
+});
 </script>
-
 </body>
 </html>
